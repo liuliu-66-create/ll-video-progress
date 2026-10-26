@@ -17,7 +17,7 @@ py -m pip install -r requirements.txt
 node scripts/playground_server.mjs
 ```
 
-打开终端返回的地址，默认 http://127.0.0.1:4174/index.html?category=progress。页面支持颜色设置；新增三款支持字号设置。预览底色不导出，交付窄条 ProRes 4444 MOV。
+打开终端本次返回的 `progressUrl`，默认从 4174 端口开始。脚本会复用已运行的同版本进度条服务；遇到其他程序或旧版本占用时自动尝试后续端口，不关闭已有程序。拉取新版后请重新运行启动命令并使用新返回的链接，避免继续打开旧页面。需要指定起始端口时使用 `LL_VIDEO_PROGRESS_PLAYGROUND_PORT`。页面支持颜色设置；新增三款支持字号设置。预览底色不导出，交付窄条 ProRes 4444 MOV。
 
 ## 样式
 
@@ -31,5 +31,6 @@ node scripts/playground_server.mjs
 
 ```powershell
 node scripts/check_catalog.mjs
+node scripts/test_playground_server.mjs
 py -B scripts/test_progress.py
 ```

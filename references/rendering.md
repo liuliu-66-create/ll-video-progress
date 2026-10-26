@@ -56,3 +56,5 @@ Playground：运行 `node "<SKILL>/scripts/playground_server.mjs"`，打开返�
 `styleId` 分别为 `dot-line`、`short-segments`、`text-leading`。支持 `appearance.fillColor`，`fontSize` 为 18–72 的整数，默认 24、26、25。新三款不需要设置 `barHeight`；高度根据实际字形自动计算，保留文字间距、透明边缘和人物空间。字幕段长不同时，仍按每章起止帧推进各段，不按总时长均分。
 
 样片可用 `progress_preview.py --style text-leading --color "#91cdec" --font-size 25 --out "<新目录>"`。正式 Playground 的新增三款显示字号输入框，应用后预览和透明 MOV 同步更新。
+
+启动时自动核验已有服务版本并复用，同端口是其他程序或旧版服务时自动换端口。默认从 4174 开始；必须使用本次返回的 `progressUrl`，不能固定打开默认端口。可用 `LL_VIDEO_PROGRESS_PLAYGROUND_PORT` 指定起始端口；无需让用户排查或结束已有进程。

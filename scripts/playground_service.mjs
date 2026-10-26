@@ -1,5 +1,6 @@
-import {createReadStream, existsSync} from 'node:fs';
-import {createServer} from 'node:http';
+import {createReadStream, existsSync, readFileSync} from 'node:fs';
+import {createServer, get} from 'node:http';
+import {createHash} from 'node:crypto';
 import {extname, resolve, sep} from 'node:path';
 import {stat, mkdir, mkdtemp} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
@@ -9,10 +10,40 @@ import {fileURLToPath} from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const playgroundRoot = resolve(projectRoot, 'playground');
-const port = Number(process.env.LL_VIDEO_PROGRESS_PLAYGROUND_PORT || 4174);
+const preferredPort = Number(process.env.LL_VIDEO_PROGRESS_PLAYGROUND_PORT || 4174);
+if (!Number.isInteger(preferredPort) || preferredPort < 1 || preferredPort > 65535) {
+  throw new Error('LL_VIDEO_PROGRESS_PLAYGROUND_PORT 应为 1–65535 的整数');
+}
+let port = preferredPort;
+const service = 'll-video-progress';
+// Updated code must not silently reuse an older process left running by another Agent.
+const signature = createHash('sha256');
+for (const file of ['playground/index.html','assets/progress/styles.json',
+  ...['playground_server.mjs','playground_service.mjs','runtime.mjs','progress_preview.py','progress.py','chapter_styles.py','export_progress.py'].map(name=>'scripts/'+name)]) {
+  signature.update(file); signature.update(readFileSync(resolve(projectRoot,file)));
+}
+const version = signature.digest('hex');
+const printReady = (reused) => {
+  const progressUrl = `http://127.0.0.1:${port}/index.html?category=progress`;
+  process.stdout.write(JSON.stringify({ok:true,service,version,reused,port,baseUrl:progressUrl,chooseUrl:progressUrl,progressUrl,
+    instruction:'请观看真实动态样片，回复样式名称；可调整进度颜色。'},null,2)+'\n');
+};
+const isCurrentService = () => new Promise(ok => {
+  const request = get(`http://127.0.0.1:${port}/api/health`, response => {
+    let body='';
+    response.setEncoding('utf8');
+    response.on('data', chunk => {body+=chunk;if(body.length>16384){request.destroy();ok(false);}});
+    response.on('end', () => {
+      try {const data=JSON.parse(body);ok(response.statusCode===200&&data.service===service&&data.version===version);}
+      catch {ok(false);}
+    });
+    response.on('error',()=>ok(false));
+  });
+  request.setTimeout(800,()=>{request.destroy();ok(false);});
+  request.on('error',()=>ok(false));
+});
 const generatedRoot = resolve(projectRoot, 'outputs', 'progress-playground-colors');
 const scriptDir = resolve(projectRoot, 'scripts');
-const defaultMode = 'progress';
 const renders = new Map();
 let renderQueue = Promise.resolve();
 const jsonResponse = (res, status, data) => {
@@ -65,6 +96,7 @@ const mime = {
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url || '/', `http://${req.headers.host || `127.0.0.1:${port}`}`);
+    if (url.pathname === '/api/health') return jsonResponse(res,200,{service,version});
     if (url.pathname === '/api/progress-color') {
       if (req.method !== 'POST') return jsonResponse(res,405,{error:'请使用 POST'});
       if (req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return jsonResponse(res,403,{error:'来源不匹配'});
@@ -116,22 +148,20 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.on('error', (error) => {
+server.on('error', async (error) => {
   if (error && error.code === 'EADDRINUSE') {
-    process.stderr.write(`端口 ${port} 已被占用。可以设置 LL_VIDEO_MOTION_PLAYGROUND_PORT 后重试。\n`);
-    process.exit(1);
+    if (await isCurrentService()) {printReady(true);return;}
+    if (port < Math.min(preferredPort+20,65535)) {
+      port++;
+      server.listen(port,'127.0.0.1');
+      return;
+    }
+    process.stderr.write(`未找到可用端口，可设置 LL_VIDEO_PROGRESS_PLAYGROUND_PORT 后重试。\n`);
+    process.exitCode=1;
+    return;
   }
   throw error;
 });
 
-server.listen(port, '127.0.0.1', () => {
-  const rootUrl = `http://127.0.0.1:${port}/index.html`;
-  const baseUrl = defaultMode === 'motion' ? `${rootUrl}?mode=motion` : defaultMode === 'progress' ? `${rootUrl}?category=progress` : rootUrl;
-  process.stdout.write(`${JSON.stringify({
-    ok: true,
-    baseUrl,
-    chooseUrl: `${rootUrl}?category=progress`,
-    progressUrl: `${rootUrl}?category=progress`,
-    instruction: defaultMode === 'progress' ? '请观看真实动态样片，回复样式名称；可调整进度颜色。' : '请观看动态样片后选择样式。',
-  }, null, 2)}\n`);
-});
+server.on('listening',()=>printReady(false));
+server.listen(port, '127.0.0.1');
