@@ -33,6 +33,19 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(paint.frame(22).getpixel((600,3))[:3],(255,255,255))
         self.assertEqual(paint.frame(60).getpixel((1400,3)),(172,217,93,255))
 
+    def test_more_than_five_chapters_all_styles(self):
+        blocks=[f'{i+1}\n00:00:0{i},000 --> 00:00:0{i},900\n第{i+1}句' for i in range(8)]
+        (self.root/'video.srt').write_text('\n\n'.join(blocks),encoding='utf-8')
+        chapters=[dict(title=f'章节{i+1}',startCue=i+1,endCue=i+1) for i in range(8)]
+        for style in ['soft-white-green','walking-leading','dot-line','short-segments','text-leading']:
+            with self.subTest(style=style):
+                plan=self.plan({**self.cfg,'styleId':style,'chapters':chapters,'barHeight':96,'fontSize':24})
+                self.assertEqual(len(plan['chapters']),8)
+                self.assertEqual(plan['chapters'][-1]['endFrameExclusive'],plan['totalFrames'])
+                painter=progress.Painter(plan)
+                for n in [0,30,210,plan['totalFrames']-1]:
+                    self.assertEqual(painter.frame(n).size,(1440,plan['outputHeight']))
+
     def test_promoted_styles_follow_unequal_subtitle_ranges(self):
         for style in ['dot-line','short-segments','text-leading']:
             with self.subTest(style=style):

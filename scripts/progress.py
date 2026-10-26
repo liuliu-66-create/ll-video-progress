@@ -91,8 +91,8 @@ def load_plan(config_path):
     canvas = integer(cfg.get('canvasHeight', style['defaultCanvasHeight']), 'canvasHeight', h, 7680)
     fps = integer(cfg.get('fps', 30), 'fps', 1, 120)
     chapters = cfg['chapters']
-    if not 1 <= len(chapters) <= 5:
-        raise ValueError('Use 1..5 chapters')
+    if not isinstance(chapters,list) or not chapters:
+        raise ValueError('Provide at least one chapter')
     id_to_index = {cue['id']: i for i, cue in enumerate(cues)}
     resolved = []
     next_index = 0
