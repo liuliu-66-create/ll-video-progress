@@ -1,0 +1,10 @@
+{
+  "name": "ll-video-progress",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "playground": "node scripts/playground_server.mjs",
+    "check": "node scripts/check_catalog.mjs"
+  }
+}
