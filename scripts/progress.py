@@ -137,12 +137,22 @@ def load_plan(config_path):
     plan['outputHeight'] = h + h//2 if walking else h
     if walking:
         frames = cfg.get('characterFrames')
+        preset = cfg.get('characterPreset','personal-default')
+        if preset not in ['personal-default','builtin']:
+            raise ValueError('characterPreset must be personal-default or builtin')
+        personal = None
+        if frames is None and preset == 'personal-default':
+            from personal_characters import read_default
+            personal = read_default()
+            if personal:
+                frames = personal['characterFrames']
+                plan['personalCharacterName'] = personal['name']
         if frames is None:
             frames = [str(SKILL/'assets/characters/liuliu'/f'walk-{i:02d}.png') for i in range(1,9)]
         if not isinstance(frames,list) or not 4 <= len(frames) <= 32:
             raise ValueError('characterFrames requires 4..32 consecutive transparent walk poses')
         plan['characterFrames'] = [str((path.parent / f).resolve()) for f in frames]
-        plan['walkFps'] = integer(cfg.get('walkFps',10),'walkFps',1,30)
+        plan['walkFps'] = integer(cfg.get('walkFps',personal['walkFps'] if personal else 10),'walkFps',1,30)
     elif cfg.get('characterFrames'):
         raise ValueError('Choose the walking-leading style to replace a character')
     if style.get('renderer') == 'chapter-lines':

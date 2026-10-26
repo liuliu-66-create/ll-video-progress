@@ -19,7 +19,7 @@ const service = 'll-video-progress';
 // Updated code must not silently reuse an older process left running by another Agent.
 const signature = createHash('sha256');
 for (const file of ['playground/index.html','assets/progress/styles.json',
-  ...['playground_server.mjs','playground_service.mjs','runtime.mjs','progress_preview.py','progress.py','chapter_styles.py','export_progress.py'].map(name=>'scripts/'+name)]) {
+  ...['playground_server.mjs','playground_service.mjs','runtime.mjs','progress_preview.py','progress.py','chapter_styles.py','export_progress.py','personal_characters.py'].map(name=>'scripts/'+name)]) {
   signature.update(file); signature.update(readFileSync(resolve(projectRoot,file)));
 }
 const version = signature.digest('hex');

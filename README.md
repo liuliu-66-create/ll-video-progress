@@ -36,3 +36,7 @@ node scripts/check_catalog.mjs
 node scripts/test_playground_server.mjs
 py -B scripts/test_progress.py
 ```
+
+## 本机个人默认人物
+
+选带人物的样式时，首次自定义并确认走路效果后，可保存为以后自动沿用的人物；无人物样式不触发这个流程。原图、动作帧和配置保存在安装目录的 `user-data/characters/`，已被 Git 忽略，不上传 GitHub。更新或重装时保留该目录。详情见 [characters.md](references/characters.md)。

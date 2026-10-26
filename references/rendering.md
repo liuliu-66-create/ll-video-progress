@@ -60,3 +60,5 @@ Playground：运行 `node "<SKILL>/scripts/playground_server.mjs"`，打开返�
 样片可用 `progress_preview.py --style text-leading --color "#91cdec" --font-size 25 --out "<新目录>"`。正式 Playground 的新增三款显示字号输入框，应用后预览和透明 MOV 同步更新。
 
 启动时自动核验已有服务版本并复用，同端口是其他程序或旧版服务时自动换端口。默认从 4174 开始；必须使用本次返回的 `progressUrl`，不能固定打开默认端口。可用 `LL_VIDEO_PROGRESS_PLAYGROUND_PORT` 指定起始端口；无需让用户排查或结束已有进程。
+
+带人物样式未传 characterFrames 时优先复用当前 Skill 安装目录的个人默认人物；用户明确选择内置人物时设置 `characterPreset: "builtin"`。公共 Playground 的默认样片显式使用 builtin，不读取个人素材；普通样式不访问个人记录。保存确认过的人物见 characters.md。
