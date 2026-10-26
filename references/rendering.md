@@ -12,6 +12,8 @@ py -X utf8 "<SKILL>/scripts/progress.py" --config "<配置绝对路径>" --out "
 
 `--browser-preview` 额外生成窄条透明 `preview.webm`。不带它仍生成正式 MOV、预览图、联系表和 QA。已存在视频时拒绝覆盖，修改使用新目录。
 
+填写 `sourceSrt` 前先核实来源：必须是用户在当前对话提供的文件或明确指定的路径。下方 `video.srt` 仅是配置占位符，不是搜索本机字幕的指令；缺少用户提供的 SRT 时先索要并等待，不运行字幕搜索或渲染。
+
 配置例子（替换为真实的字幕编号）：
 
 ```json
