@@ -110,9 +110,10 @@ const server = createServer(async (req, res) => {
       if (typeof data?.color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(data.color)) return jsonResponse(res,400,{error:'请输入 #RRGGBB 色号'});
       const styleId = data.styleId || 'soft-white-green';
       if (!['soft-white-green','walking-leading','dot-line','short-segments','text-leading'].includes(styleId)) return jsonResponse(res,400,{error:'未知进度条样式'});
-      const adjustable = ['dot-line','short-segments','text-leading'].includes(styleId);
-      const fontSize = adjustable ? (data.fontSize ?? { 'dot-line':24,'short-segments':26,'text-leading':25 }[styleId]) : undefined;
-      if (adjustable && (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > 72)) return jsonResponse(res,400,{error:'字号请输入 18–72 之间的整数'});
+      const barStyle = ['soft-white-green','walking-leading'].includes(styleId);
+      const fontMax = barStyle ? 48 : 72;
+      const fontSize = data.fontSize ?? { 'soft-white-green':38,'walking-leading':38,'dot-line':24,'short-segments':26,'text-leading':25 }[styleId];
+      if (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > fontMax) return jsonResponse(res,400,{error:`字号请输入 18–${fontMax} 之间的整数`});
       try {return jsonResponse(res,200,await renderColor(data.color.slice(1).toLowerCase(),styleId,fontSize));}
       catch (error) {return jsonResponse(res,500,{error:error.message});}
     }

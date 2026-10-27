@@ -728,8 +728,8 @@
     const categories = [{id: "progress", name: "章节进度条"}];
 
     const styles = [
-      {id:"soft-white-green", category:"progress", name:"朦胧白底", code:"progress-bar / soft-white-green", src:"samples/progress-soft-white-green-preview.webm", poster:"posters/progress-soft-white-green.png", thumbnail:"posters/progress-soft-white-green-strip.png", download:"samples/progress-soft-white-green.mov", aspectRatio:"4 / 3", stripHeight:64, description:"直角横条、半透明白底、绿色逐章填充、白色章节文字和竖线分隔。可改任意进度颜色。条外透明，播放器底色只用于预览。", bestFor:"教程、录屏、知识口播的章节导航。当前为 8 秒选样片，正式进度条按字幕生成。"},
-      {id:"walking-leading", category:"progress", name:"人物领走", code:"progress-bar / walking-leading", src:"samples/progress-walking-leading-preview.webm", poster:"posters/progress-walking-leading.png", thumbnail:"posters/progress-walking-leading-strip.png", download:"samples/progress-walking-leading.mov", aspectRatio:"4 / 3", stripHeight:96, description:"沿用直角半透明白底横条，绿色逐章填充；人物与条等高，在填充前沿领走，向下最多露出半个条高。可换进度颜色，也可在制作时换人物。", bestFor:"需要卡通形象引导进度的教程和口播。当前为 8 秒选样片，下载窄条透明 MOV。"},
+      {id:"soft-white-green", category:"progress", name:"朦胧白底", code:"progress-bar / soft-white-green", src:"samples/progress-soft-white-green-preview.webm", poster:"posters/progress-soft-white-green.png", thumbnail:"posters/progress-soft-white-green-strip.png", download:"samples/progress-soft-white-green.mov", aspectRatio:"4 / 3", stripHeight:64, fontSize:38, fontMax:48, description:"直角横条、半透明白底、绿色逐章填充、白色章节文字和竖线分隔。可调整进度颜色和字号。条外透明，播放器底色只用于预览。", bestFor:"教程、录屏、知识口播的章节导航。当前为 8 秒选样片，正式进度条按字幕生成。"},
+      {id:"walking-leading", category:"progress", name:"人物领走", code:"progress-bar / walking-leading", src:"samples/progress-walking-leading-preview.webm", poster:"posters/progress-walking-leading.png", thumbnail:"posters/progress-walking-leading-strip.png", download:"samples/progress-walking-leading.mov", aspectRatio:"4 / 3", stripHeight:96, fontSize:38, fontMax:48, description:"沿用直角半透明白底横条，绿色逐章填充；人物与条等高，在填充前沿领走，向下最多露出半个条高。可调整进度颜色和字号，也可在制作时换人物。", bestFor:"需要卡通形象引导进度的教程和口播。当前为 8 秒选样片，下载窄条透明 MOV。"},
       {id:"dot-line", category:"progress", name:"圆点连线", code:"progress-bar / dot-line", src:"samples/progress-dot-line-preview.webm", poster:"posters/progress-dot-line.png", thumbnail:"posters/progress-dot-line.png", download:"samples/progress-dot-line.mov", aspectRatio:"4 / 3", stripHeight:78, fontSize:24, previewBackground:"#27313f", defaultColor:"#f2b9d1", description:"细线连接圆点，连线与圆点随章节进度变色，文字紧贴圆点下方。可调整进度颜色和字号。", bestFor:"教程、录屏与知识口播的章节导航。当前为 8 秒选样片，下载窄条透明 MOV。"},
       {id:"short-segments", category:"progress", name:"分段短线", code:"progress-bar / short-segments", src:"samples/progress-short-segments-preview.webm", poster:"posters/progress-short-segments.png", thumbnail:"posters/progress-short-segments.png", download:"samples/progress-short-segments.mov", aspectRatio:"4 / 3", stripHeight:70, fontSize:26, previewBackground:"#27313f", defaultColor:"#f5f699", description:"每章一根短线，分别随本段进度填色，文字紧贴短线下方。可调整进度颜色和字号。", bestFor:"教程、录屏与知识口播的章节导航。当前为 8 秒选样片，下载窄条透明 MOV。"},
       {id:"text-leading", category:"progress", name:"文字领走", code:"progress-bar / text-leading", src:"samples/progress-text-leading-preview.webm", poster:"posters/progress-text-leading.png", thumbnail:"posters/progress-text-leading.png", download:"samples/progress-text-leading.mov", aspectRatio:"4 / 3", stripHeight:96, fontSize:25, previewBackground:"#27313f", defaultColor:"#91cdec", description:"文字随进度变色，默认人物在前沿领走。小字号使用轻字重与高精度绘制。可调整进度颜色和字号。", bestFor:"教程、录屏与知识口播的章节导航。当前为 8 秒选样片，下载窄条透明 MOV。"},
@@ -911,6 +911,7 @@
       progressHex.value = currentColor;
       progressFontControl.hidden = !style.fontSize;
       progressFontSize.value = media.fontSize || style.fontSize || 25;
+      progressFontSize.max = style.fontMax || 72;
       progressStatus.textContent = media.color ? `已应用 ${media.color}${media.fontSize ? " · "+media.fontSize+" px" : ""}` : "";
 
       error.hidden = true;
@@ -957,7 +958,8 @@
       const id = activeId;
       const style = styles.find(item => item.id === id);
       const fontSize = style.fontSize ? Number(progressFontSize.value) : undefined;
-      if (style.fontSize && (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > 72)) {progressStatus.textContent = "字号请输入 18–72 之间的整数"; return;}
+      const fontMax = style.fontMax || 72;
+      if (style.fontSize && (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > fontMax)) {progressStatus.textContent = `字号请输入 18–${fontMax} 之间的整数`; return;}
       const request = ++colorRequest;
       progressApply.disabled = true;
       progressStatus.textContent = "正在生成所选设置的样片…";

@@ -4,6 +4,7 @@ import {createServer} from 'node:http';
 import {once} from 'node:events';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {readFile} from 'node:fs/promises';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const children=[];
@@ -48,7 +49,28 @@ try {
   assert.notEqual(updated.ready.port,stale);
   assert.equal(updated.ready.version,health.version);
   assert.equal((await fetch(`http://127.0.0.1:${occupied}/`)).status,200);
+  const base=`http://127.0.0.1:${first.ready.port}`;
+  for (const [styleId,fontSize] of [['soft-white-green',24],['walking-leading',48]]) {
+    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId,fontSize,color:'#acd95d'})});
+    const data=await response.json();
+    assert.equal(response.status,200,JSON.stringify(data));
+    assert.equal(data.fontSize,fontSize);
+    const key=data.preview.split('/')[2];
+    const out=resolve(root,'outputs/progress-playground-colors',key);
+    const plan=JSON.parse(await readFile(resolve(out,'resolved-config.json'),'utf8'));
+    const qa=JSON.parse(await readFile(resolve(out,'qa.json'),'utf8'));
+    assert.equal(plan.fontSize,fontSize);
+    assert.equal(plan.barHeight,64);
+    assert.equal(qa.fullDecode,'passed');
+    assert.equal(qa.height,styleId==='walking-leading'?96:64);
+    assert.equal((await fetch(base+data.download)).status,200);
+  }
+  for (const fontSize of [17,49,24.5,'24']) {
+    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId:'walking-leading',fontSize,color:'#acd95d'})});
+    assert.equal(response.status,400);
+  }
   console.log('Passed: occupied port fallback, same-version reuse, stale-version avoidance, existing service preserved.');
+  console.log('Passed: both bar styles retain requested font sizes in encoded MOVs; invalid sizes rejected.');
 } finally {
   for(const child of children)if(child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
   for(const server of blockers)await new Promise(done=>server.close(done));

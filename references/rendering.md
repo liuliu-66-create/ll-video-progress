@@ -38,6 +38,7 @@ py -X utf8 "<SKILL>/scripts/progress.py" --config "<配置绝对路径>" --out "
 - 第一章从零开始，之后在各段第一句开始时切换，到最后字幕结束。可选 `duration` 补已确认的片尾空白，不能截断字幕。时间量化到帧，误差不超过一帧。
 - `width`/`canvasHeight` 是原视频画面规格；输出为窄条，普通款高度 `barHeight`，人物款高度 `barHeight + floor(barHeight/2)`。先确认原片比例；未提供实际像素尺寸时，可分别按 4:3 → 1440×1080、16:9 → 1920×1080、3:4 → 1080×1440 配置。用户提供实际分辨率时优先使用实际尺寸，也接受其他比例（如 9:16 → 1080×1920）。这里的 canvasHeight 记录原视频高度，不将其作为进度条导出高度，仍交付窄条透明素材。
 - `appearance.fillColor` 是 RGB 数组；色号 `#7c3aed` 对应 `[124,58,237]`。也可覆盖 `baseColor`、`baseOpacity`、`fillOpacity`、`textColor`、`outlineColor`、`previewBackground`。透明度 0～1，默认白底约 43%。
+- 五款都接受 `fontSize`。正式配置必须沿用用户在 Playground 选定的字号，不回退到默认值。朦胧白底与人物领走在 64 px 条高下的 Playground 范围为 18–48 px、默认 38 px；改变字号不改变条高、人物大小与输出高度。另三款保留 18–72 px。标题排版检查仍然适用。
 - `fontSize` 默认随条高调整，同级标题同字号。标题放不下会报错，需要缩短标题或调整版式，不能裁切。
 - 人物版 `characterFrames` 可提供 4～32 张按顺序排列的透明原地迈步 PNG；省略时使用内置人物。`walkFps` 默认 10，范围 1～30。人物统一缩放到不超过条高，条外最多露出半个条高。
 
