@@ -688,6 +688,8 @@
             <label class="sr-only" for="progress-hex">颜色色号</label>
             <input id="progress-hex" type="text" value="#acd95d" maxlength="7" spellcheck="false" aria-label="颜色色号" />
             <label id="progress-font-control" hidden>字号 <input id="progress-font-size" type="number" min="18" max="72" step="1" value="25" aria-label="进度条字号" style="width:76px"> px</label>
+            <label id="progress-opacity-control">底条不透明度 <input id="progress-base-opacity" type="range" min="0" max="100" step="1" value="43" aria-label="底条不透明度" style="width:120px;vertical-align:middle"> <output id="progress-base-opacity-value" for="progress-base-opacity">43%</output></label>
+            <label id="progress-height-control">横条高度 <input id="progress-bar-height" type="range" min="32" max="128" step="1" value="64" aria-label="横条高度" style="width:120px;vertical-align:middle"> <output id="progress-bar-height-value" for="progress-bar-height">64 px</output></label>
             <label>预览底色（不导出） <input id="progress-preview-bg" type="color" value="#807c75" aria-label="预览底色（不导出）"></label>
             <button id="apply-progress-color" type="button">应用设置</button>
             <button id="play-progress" type="button">播放 / 暂停</button>
@@ -765,6 +767,20 @@
     progressPreviewBg.addEventListener("input", () => {document.querySelector(".stage.is-progress").style.background = progressPreviewBg.value;});
     const progressFontControl = document.querySelector("#progress-font-control");
     const progressFontSize = document.querySelector("#progress-font-size");
+    const progressOpacityControl = document.querySelector("#progress-opacity-control");
+    const progressBaseOpacity = document.querySelector("#progress-base-opacity");
+    const progressBaseOpacityValue = document.querySelector("#progress-base-opacity-value");
+    progressBaseOpacity.addEventListener("input", () => {
+      progressBaseOpacityValue.value = progressBaseOpacity.value + "%";
+      progressStatus.textContent = "底条不透明度已调整，点击“应用设置”更新动态样片和 MOV。";
+    });
+    const progressHeightControl = document.querySelector("#progress-height-control");
+    const progressBarHeight = document.querySelector("#progress-bar-height");
+    const progressBarHeightValue = document.querySelector("#progress-bar-height-value");
+    progressBarHeight.addEventListener("input", () => {
+      progressBarHeightValue.value = progressBarHeight.value + " px";
+      progressStatus.textContent = "高度已调整，点击“应用设置”更新动态样片和 MOV；人物随横条等比缩放。";
+    });
     const progressVariants = new Map();
     let colorRequest = 0;
     let progressColor = "#acd95d";
@@ -912,7 +928,13 @@
       progressFontControl.hidden = !style.fontSize;
       progressFontSize.value = media.fontSize || style.fontSize || 25;
       progressFontSize.max = style.fontMax || 72;
-      progressStatus.textContent = media.color ? `已应用 ${media.color}${media.fontSize ? " · "+media.fontSize+" px" : ""}` : "";
+      progressOpacityControl.hidden = !["soft-white-green","walking-leading"].includes(id);
+      progressHeightControl.hidden = progressOpacityControl.hidden;
+      progressBarHeight.value = media.barHeight ?? 64;
+      progressBarHeightValue.value = progressBarHeight.value + " px";
+      progressBaseOpacity.value = Math.round((media.baseOpacity ?? 110/255) * 100);
+      progressBaseOpacityValue.value = progressBaseOpacity.value + "%";
+      progressStatus.textContent = media.color ? `已应用 ${media.color}${media.fontSize ? " · 字号 "+media.fontSize+" px" : ""}${!progressOpacityControl.hidden ? " · 底条不透明度 "+progressBaseOpacity.value+"% · 横条高度 "+progressBarHeight.value+" px" : ""}` : "";
 
       error.hidden = true;
       loading.hidden = false;
@@ -960,13 +982,16 @@
       const fontSize = style.fontSize ? Number(progressFontSize.value) : undefined;
       const fontMax = style.fontMax || 72;
       if (style.fontSize && (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > fontMax)) {progressStatus.textContent = `字号请输入 18–${fontMax} 之间的整数`; return;}
+      const baseOpacity = progressOpacityControl.hidden ? undefined : Number(progressBaseOpacity.value)/100;
+      const barHeight = progressHeightControl.hidden ? undefined : Number(progressBarHeight.value);
+      if (barHeight !== undefined && fontSize > barHeight - 8) {progressStatus.textContent = "当前高度放不下字号，请减小字号或增加横条高度。"; return;}
       const request = ++colorRequest;
       progressApply.disabled = true;
       progressStatus.textContent = "正在生成所选设置的样片…";
       downloadOverlay.removeAttribute("href");
       downloadOverlay.setAttribute("aria-disabled", "true");
       try {
-        const response = await fetch("/api/progress-color", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({color,styleId:id,fontSize})});
+        const response = await fetch("/api/progress-color", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({color,styleId:id,fontSize,baseOpacity,barHeight})});
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "生成失败");
         if (request !== colorRequest || id !== activeId) return;

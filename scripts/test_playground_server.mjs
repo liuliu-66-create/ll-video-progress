@@ -50,8 +50,8 @@ try {
   assert.equal(updated.ready.version,health.version);
   assert.equal((await fetch(`http://127.0.0.1:${occupied}/`)).status,200);
   const base=`http://127.0.0.1:${first.ready.port}`;
-  for (const [styleId,fontSize] of [['soft-white-green',24],['walking-leading',48]]) {
-    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId,fontSize,color:'#acd95d'})});
+  for (const [styleId,fontSize,baseOpacity,barHeight] of [['soft-white-green',24,0,40],['walking-leading',48,0.8,80],['walking-leading',48,0,80],['walking-leading',48,0,64]]) {
+    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId,fontSize,color:'#acd95d',baseOpacity,barHeight})});
     const data=await response.json();
     assert.equal(response.status,200,JSON.stringify(data));
     assert.equal(data.fontSize,fontSize);
@@ -60,17 +60,29 @@ try {
     const plan=JSON.parse(await readFile(resolve(out,'resolved-config.json'),'utf8'));
     const qa=JSON.parse(await readFile(resolve(out,'qa.json'),'utf8'));
     assert.equal(plan.fontSize,fontSize);
-    assert.equal(plan.barHeight,64);
+    assert.equal(plan.appearance.baseOpacity,baseOpacity);
+    assert.equal(data.baseOpacity,baseOpacity);
+    assert.equal(plan.barHeight,barHeight);
+    assert.equal(data.barHeight,barHeight);
     assert.equal(qa.fullDecode,'passed');
-    assert.equal(qa.height,styleId==='walking-leading'?96:64);
+    assert.equal(qa.height,styleId==='walking-leading'?barHeight+Math.floor(barHeight/2):barHeight);
+    if (styleId==='walking-leading') assert.equal(qa.characterHeight,barHeight);
     assert.equal((await fetch(base+data.download)).status,200);
   }
   for (const fontSize of [17,49,24.5,'24']) {
     const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId:'walking-leading',fontSize,color:'#acd95d'})});
     assert.equal(response.status,400);
   }
+  for (const baseOpacity of [-0.1,1.1,'0.5',null]) {
+    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId:'walking-leading',color:'#acd95d',baseOpacity})});
+    assert.equal(response.status,400);
+  }
+  for (const barHeight of [31,129,40.5,'40',null]) {
+    const response=await fetch(base+'/api/progress-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({styleId:'walking-leading',color:'#acd95d',barHeight})});
+    assert.equal(response.status,400);
+  }
   console.log('Passed: occupied port fallback, same-version reuse, stale-version avoidance, existing service preserved.');
-  console.log('Passed: both bar styles retain requested font sizes in encoded MOVs; invalid sizes rejected.');
+  console.log('Passed: MOVs retain font size, opacity and bar height; characters scale with bars; height/opacity changes bypass stale cache; invalid settings rejected.');
 } finally {
   for(const child of children)if(child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}
   for(const server of blockers)await new Promise(done=>server.close(done));

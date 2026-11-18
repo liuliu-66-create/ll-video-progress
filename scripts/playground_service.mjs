@@ -50,8 +50,8 @@ const jsonResponse = (res, status, data) => {
   res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
   res.end(JSON.stringify(data));
 };
-const renderColor = (hex, styleId, fontSize) => {
-  const cacheKey = styleId + ':' + hex + ':' + (fontSize || 'default');
+const renderColor = (hex, styleId, fontSize, baseOpacity, barHeight) => {
+  const cacheKey = styleId + ':' + hex + ':' + (fontSize || 'default') + ':' + baseOpacity + ':' + barHeight;
   if (renders.has(cacheKey)) return renders.get(cacheKey);
   const job = renderQueue.then(async () => {
     await mkdir(generatedRoot, {recursive:true});
@@ -59,6 +59,8 @@ const renderColor = (hex, styleId, fontSize) => {
     await new Promise((ok, fail) => {
       const args = ['-B','-X','utf8',resolve(scriptDir,'progress_preview.py'),'--color','#'+hex,'--style',styleId,'--out',out];
       if (fontSize !== undefined) args.push('--font-size',String(fontSize));
+      args.push('--base-opacity',String(baseOpacity));
+      args.push('--bar-height',String(barHeight));
       const p = spawn(process.platform === 'win32' ? 'py' : 'python3', args, {windowsHide:true,stdio:['ignore','ignore','pipe']});
       let stderr = '';
       p.stderr.on('data', c => { stderr = (stderr + c).slice(-2000); });
@@ -67,7 +69,7 @@ const renderColor = (hex, styleId, fontSize) => {
       p.on('close', code => {clearTimeout(timer); code === 0 ? ok() : fail(new Error(stderr || '生成失败'));});
     });
     const key = out.slice(generatedRoot.length + 1);
-    return {preview:`/progress-generated/${key}/preview.webm`,poster:`/progress-generated/${key}/preview-alpha.png`,thumbnail:`/progress-generated/${key}/preview.png`,download:`/progress-generated/${key}/progress-strip.mov`,color:'#'+hex,styleId,fontSize};
+    return {preview:`/progress-generated/${key}/preview.webm`,poster:`/progress-generated/${key}/preview-alpha.png`,thumbnail:`/progress-generated/${key}/preview.png`,download:`/progress-generated/${key}/progress-strip.mov`,color:'#'+hex,styleId,fontSize,baseOpacity,barHeight};
   });
   renderQueue = job.catch(() => {});
   renders.set(cacheKey,job);
@@ -114,7 +116,12 @@ const server = createServer(async (req, res) => {
       const fontMax = barStyle ? 48 : 72;
       const fontSize = data.fontSize ?? { 'soft-white-green':38,'walking-leading':38,'dot-line':24,'short-segments':26,'text-leading':25 }[styleId];
       if (!Number.isInteger(fontSize) || fontSize < 18 || fontSize > fontMax) return jsonResponse(res,400,{error:`字号请输入 18–${fontMax} 之间的整数`});
-      try {return jsonResponse(res,200,await renderColor(data.color.slice(1).toLowerCase(),styleId,fontSize));}
+      const baseOpacity = data.baseOpacity === undefined ? 110/255 : data.baseOpacity;
+      if (typeof baseOpacity !== 'number' || !Number.isFinite(baseOpacity) || baseOpacity < 0 || baseOpacity > 1) return jsonResponse(res,400,{error:'底条不透明度请输入 0–100%'});
+      const barHeight = data.barHeight === undefined ? 64 : data.barHeight;
+      if (!Number.isInteger(barHeight) || barHeight < 32 || barHeight > 128) return jsonResponse(res,400,{error:'横条高度请输入 32–128 px 之间的整数'});
+      if (barStyle && fontSize > barHeight - 8) return jsonResponse(res,400,{error:'当前高度放不下字号，请减小字号或增加横条高度'});
+      try {return jsonResponse(res,200,await renderColor(data.color.slice(1).toLowerCase(),styleId,fontSize,baseOpacity,barHeight));}
       catch (error) {return jsonResponse(res,500,{error:error.message});}
     }
     const requested = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
